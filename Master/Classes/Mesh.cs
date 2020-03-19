@@ -8,5 +8,12 @@ namespace Master
 {
     class Mesh
     {
+        public int id;
+        public List<Element> elements;
+        public List<Node> nodes;
+        public Mesh()
+            {
+            }
+
     }
 }
