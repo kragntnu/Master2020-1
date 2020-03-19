@@ -12,9 +12,9 @@ namespace Master.Components
         /// Initializes a new instance of the MeshSweep class.
         /// </summary>
         public MeshSweep()
-          : base("MeshSweep", "Nickname",
-              "Description",
-              "Category", "Subcategory")
+          : base("MeshSweep", "MSweep",
+              "Take in two MeshPoints (source, target) and divisions and Sweep Mesh",
+              "NTNU", "Master")
         {
         }
 
@@ -24,6 +24,9 @@ namespace Master.Components
         protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
         {
             pManager.AddPointParameter("Points", "pts", "Points which will create element", GH_ParamAccess.list);
+            pManager.AddGenericParameter("MeshPoints (source)", "Ms", "Mesh source", GH_ParamAccess.item);
+            pManager.AddGenericParameter("MeshPoints (target)", "Mt", "Mesh target", GH_ParamAccess.item);
+            pManager.AddNumberParameter("Divisions", "w", "How many divisions of the mesh", GH_ParamAccess.list);
 
         }
 

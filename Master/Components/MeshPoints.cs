@@ -5,6 +5,7 @@ using Grasshopper.Kernel;
 using Grasshopper.Kernel.Data;
 using Rhino.Geometry;
 using System.Linq;
+using System.Threading.Tasks; 
 
 // In order to load the result of this wizard, you will also need to
 // add the output bin/ folder of this project to the list of loaded
@@ -66,12 +67,14 @@ namespace Master
             DA.GetData(1, ref u);
             DA.GetData(2, ref v);
 
+           
+        
+
             Brep b1 = Brep.CreateFromCornerPoints(points[0], points[1], points[2], points[3]); //Doesn't seem like it finds the CreateFromCornerPoints command..
-            //then divb1= divide domain(b1,u,v) surfacedomain 
-            //IniMesh = SubSrf(b1,divb1)
-            //  private void RunScript(Brep b1, List<Brep> IniMesh, double Offset1, double Offset2, ref object Mesh)
-            Vector3d Norm, y0, z0, Trns;
-            Transform xform;
+            //then divb1= divide domain(b1,u,v) Using grasshopper component divide domain^2.  how to do this?
+            //IniMesh = SubSrf(b1,divb1) Using grasshopper component isotrim. How to do this?
+            // Copy from Roksvaag code:  private void RunScript(Brep b1, List<Brep> IniMesh, double Offset1, double Offset2, ref object Mesh)
+            
             double ycrd, zcrd, rad;
             Brep Obj;
 
@@ -82,39 +85,13 @@ namespace Master
             List<Point3d> Vrt = new List<Point3d>();
             List<Point3d> Pts = new List<Point3d>();
             List<double> Ang = new List<double>();
-            ///////////////////////////////////////////////////////////////////////////////////////
-            ///////////////////////////////////////////////////////////////////////////////////////
-            //Orient Mesh and Profile according to the YZ-system
-            Norm = (b1.Surfaces[0]).NormalAt(0.5, 0.5);
-            
-            if (Norm == Vector3d.ZAxis)
-            {
-                y0 = Vector3d.CrossProduct(Vector3d.YAxis, Norm);
-            }
-            else
-            {
-                y0 = Vector3d.CrossProduct(Vector3d.ZAxis, Norm);
-            }
-            z0 = Norm;
-            z0.Rotate(1.5 * Math.PI, y0);
-            xform = Transform.Rotation(Norm, z0, y0, Vector3d.XAxis, Vector3d.ZAxis, Vector3d.YAxis);
-            b1.Transform(xform);
-            Point3d Cntr = AreaMassProperties.Compute(b1).Centroid;
 
-            Point3d pt = new Point3d(0, Offset1, Offset2);
-            Trns = pt - Cntr;
 
-            b1.Translate(Trns);
-            tree.Add(Section, new GH_Path(0));
+       
 
-            for (int i = 0; i < IniMesh.Count(); i++)
-            {
-                IniMesh[i].Transform(xform);
-                IniMesh[i].Translate(Trns);
-            }
-            ///////////////////////////////////////////////////////////////////////////////////////
-            ///////////////////////////////////////////////////////////////////////////////////////
             //Sort vertices according to the yz-coordinate system w/points in the 3rd quadrant being first pt
+            Point3d Cntr = AreaMassProperties.Compute(Section).Centroid;
+            tree.Add(Section, new GH_Path(0));
             for (int i = 0; i < IniMesh.Count(); i++)
             {
                 Cntr = AreaMassProperties.Compute(IniMesh[i]).Centroid;
@@ -136,6 +113,7 @@ namespace Master
                 Pts.Clear();
                 Ang.Clear();
                 Vrt.Clear();
+           
             }
 
             Mesh = tree;
