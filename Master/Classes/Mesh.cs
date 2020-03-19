@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Master
 {
-    class Mesh
+    class Mesh //rather use this than the MeshPoints?
     {
         public int id;
         public List<Element> elements;
