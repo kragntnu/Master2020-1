@@ -26,7 +26,7 @@ namespace Master
           : base("MeshPoints", "MeshP","Mesh from points","NTNU", "Master")
         {
         }
-        //make a mesh from 4 corner points, to a divided surface with correct vertices. 
+        //make a mesh from 4 corner points, to a divided surface with correct vertices. Can from this make 1 source mesh, 1 target mesh, and then use MeshSweep to sweep between the meshes?
 
         /// <summary>
         /// Registers all the input parameters for this component.
