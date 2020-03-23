@@ -1,11 +1,11 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using Grasshopper;
 using Grasshopper.Kernel;
 using Grasshopper.Kernel.Data;
 using Rhino.Geometry;
 using System.Linq;
-using System.Threading.Tasks; 
+using System.Threading.Tasks;
 
 // In order to load the result of this wizard, you will also need to
 // add the output bin/ folder of this project to the list of loaded
@@ -24,21 +24,20 @@ namespace Master
         /// new tabs/panels will automatically be created.
         /// </summary>
         public MeshPoints()
-          : base("MeshPoints", "MeshP","Mesh from points","NTNU", "Master")
+          : base("MeshPoints", "MeshP", "Mesh from points", "NTNU", "Master")
         {
         }
-        //make a mesh from 4 corner points, to a divided surface with correct vertices. Can from this make 1 source mesh, 1 target mesh, and then use MeshSweep to sweep between the meshes?
+        //make a mesh from 4 corner points. Can from this make 1 source mesh, 1 target mesh, and then use MeshSweep to sweep between the meshes?
+        //or is this supposed to be a class?
 
         /// <summary>
         /// Registers all the input parameters for this component.
         /// </summary>
         protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
         {
-            pManager.AddPointParameter("Points", "pts", "Points which will create Mesh", GH_ParamAccess.list); //0
-            //has to be listed in correct order
-            //pManager.AddNumberParameter("Diameter", "d", "diameter input", GH_ParamAccess.item); //kan evnt stå list istedenfor item
-            pManager.AddPointParameter("U count", "u", "divide curve in u direction", GH_ParamAccess.item); //1
-            pManager.AddPointParameter("V count", "v", "divide curve in v direction", GH_ParamAccess.item); //2
+            pManager.AddPointParameter("Points","pts","Points which will create Mesh",GH_ParamAccess.list); //0
+            pManager.AddIntegerParameter("U count","u","divide curve in u direction",GH_ParamAccess.item,1); //1
+            pManager.AddIntegerParameter("V count","v","divide curve in v direction",GH_ParamAccess.item,1); //2
         }
 
         /// <summary>
@@ -46,7 +45,8 @@ namespace Master
         /// </summary>
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
         {
-            pManager.AddGenericParameter("Mesh", "mesh", "Mesh with correct vertices", GH_ParamAccess.item);
+            //pManager.AddGenericParameter("Mesh", "mesh", "Mesh with correct vertices", GH_ParamAccess.item);
+            pManager.AddGenericParameter("Mesh", "mesh", "Mesh as breps", GH_ParamAccess.list);
         }
 
         /// <summary>
@@ -58,73 +58,36 @@ namespace Master
         {
             //declare variables
             List<Point3d> points = new List<Point3d>();
-            int u;
-            int v;
-            // examples double fx = 11.92; //Mpa; //var lnum = new List<double>();
-            // double fx = 11.92; //MPa
+            int u = 1;
+            int v = 1;
+
             // get inputs
-            DA.GetData(0, ref points); //use reference not new
+            DA.GetDataList(0, points); //not ref when points
             DA.GetData(1, ref u);
             DA.GetData(2, ref v);
 
-           
-        
+            var s = NurbsSurface.CreateFromCorners(points[0], points[1], points[2], points[3], 0);
+          
+            List<Brep> iniMesh = new List<Brep>();
 
-            Brep b1 = Brep.CreateFromCornerPoints(points[0], points[1], points[2], points[3]); //Doesn't seem like it finds the CreateFromCornerPoints command..
-            //then divb1= divide domain(b1,u,v) Using grasshopper component divide domain^2.  how to do this?
-            //IniMesh = SubSrf(b1,divb1) Using grasshopper component isotrim. How to do this?
-            // Copy from Roksvaag code:  private void RunScript(Brep b1, List<Brep> IniMesh, double Offset1, double Offset2, ref object Mesh)
-            
-            double ycrd, zcrd, rad;
-            Brep Obj;
-
-            //Create output tree
-            DataTree<System.Object> tree = new DataTree<System.Object>();
-
-            //Create Lists
-            List<Point3d> Vrt = new List<Point3d>();
-            List<Point3d> Pts = new List<Point3d>();
-            List<double> Ang = new List<double>();
-
-
-       
-
-            //Sort vertices according to the yz-coordinate system w/points in the 3rd quadrant being first pt
-            Point3d Cntr = AreaMassProperties.Compute(Section).Centroid;
-            tree.Add(Section, new GH_Path(0));
-            for (int i = 0; i < IniMesh.Count(); i++)
+            for (int i = 0; i < u; i++)
             {
-                Cntr = AreaMassProperties.Compute(IniMesh[i]).Centroid;
-                for (int j = 0; j < IniMesh[i].DuplicateVertices().Count(); j++)
+                for (int j = 0; j < v; j++)
                 {
-                    Vrt.Add(IniMesh[i].DuplicateVertices()[j]);
-                    ycrd = Vrt[j].Y - Cntr.Y;
-                    zcrd = Vrt[j].Z - Cntr.Z;
-                    rad = Math.Atan2(zcrd, ycrd);
-                    Ang.Add(rad);
+                    Point3d p1 = new Point3d(s.PointAt(s.Domain(0).Length / u * i, s.Domain(1).Length / v * j));
+                    Point3d p2 = new Point3d(s.PointAt(s.Domain(0).Length / u * (i + 1), s.Domain(1).Length / v * j));
+                    Point3d p3 = new Point3d(s.PointAt(s.Domain(0).Length / u * (i + 1), s.Domain(1).Length / v * (j + 1)));
+                    Point3d p4 = new Point3d(s.PointAt(s.Domain(0).Length / u * i, s.Domain(1).Length / v * (j + 1)));
+                    iniMesh.Add(Brep.CreateFromCornerPoints(p1, p2, p3, p4, 0));
+
+
                 }
-                var Sorted = Vrt.Zip(Ang, (x, y) => new { x, y })
-                  .OrderBy(pair => pair.y)
-                  .Reverse()
-                  .ToList();
-                Pts = Sorted.Select(pair => pair.x).ToList();
-                Obj = Brep.CreateFromCornerPoints(Pts[0], Pts[1], Pts[2], Pts[3], doc.ModelAbsoluteTolerance);
-                tree.Add(Obj, new GH_Path(1));
-                Pts.Clear();
-                Ang.Clear();
-                Vrt.Clear();
-           
             }
 
-            Mesh = tree;
+            //set outputs
+            DA.SetDataList(0, iniMesh);
 
-       
 
-
-        //set outputs
-        DA.SetData(0, Mesh);
-
-            
         }
 
         protected override System.Drawing.Bitmap Icon
@@ -139,7 +102,7 @@ namespace Master
 
         public override Guid ComponentGuid
         {
-            get { return new Guid("B81EF9B6-E993-4978-83D8-7FF97636A768"); }
+            get { return new Guid("7877BFC0-9563-4387-BA2C-DE5FDA4E2403"); }
         }
     }
 }
